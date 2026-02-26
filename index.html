@@ -789,25 +789,39 @@
             "لا تستسلم! أنت رائع!",
         ];
 
-        // Speak Arabic text
+        // Speak Arabic text using Google Translate TTS
+        let currentAudio = null;
         function speakArabic(text) {
             try {
-                if (!('speechSynthesis' in window)) return;
-                window.speechSynthesis.cancel();
-                const utter = new SpeechSynthesisUtterance(text);
-                utter.lang = 'ar-SA';
-                utter.rate = 0.9;
-                utter.pitch = 1.1;
-                utter.volume = 1;
-                // Try to find an Arabic voice
-                const voices = window.speechSynthesis.getVoices();
-                const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
-                if (arabicVoice) utter.voice = arabicVoice;
-                window.speechSynthesis.speak(utter);
+                // Stop any currently playing audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
+                const encoded = encodeURIComponent(text);
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ar&q=${encoded}`;
+                currentAudio = new Audio(url);
+                currentAudio.volume = 1;
+                currentAudio.play().catch(() => {
+                    // Fallback to Web Speech API if Google TTS blocked
+                    try {
+                        if ('speechSynthesis' in window) {
+                            window.speechSynthesis.cancel();
+                            const utter = new SpeechSynthesisUtterance(text);
+                            utter.lang = 'ar-SA';
+                            utter.rate = 0.9;
+                            utter.pitch = 1.1;
+                            const voices = window.speechSynthesis.getVoices();
+                            const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+                            if (arabicVoice) utter.voice = arabicVoice;
+                            window.speechSynthesis.speak(utter);
+                        }
+                    } catch(e2) {}
+                });
             } catch(e) {}
         }
 
-        // Pre-load voices (some browsers need this)
+        // Pre-load voices as fallback
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
             window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
