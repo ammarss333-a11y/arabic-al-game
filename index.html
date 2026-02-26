@@ -764,6 +764,55 @@
         const correctMessages = ["أحسنت! 🎉", "ممتاز! 👏", "رائع! 🌟", "صحيح! ✅", "بارك الله فيك! 💪", "عبقري! 🧠", "مذهل! 💫", "بطل! 🏆"];
         const wrongMessages = ["حاول مرة أخرى! 💪", "لا بأس! تعلمنا شيئاً جديداً 📚", "قريب! 🤔", "المرة القادمة إن شاء الله! 🌟"];
 
+        // Arabic voice phrases
+        const correctVoicePhrases = [
+            "أحسنت يا بطل!",
+            "ممتاز! أنت ذكي جداً!",
+            "رائع! إجابة صحيحة!",
+            "عبقري! ما شاء الله!",
+            "بارك الله فيك! صحيح!",
+            "يا سلام! أنت مبدع!",
+            "هائل! استمر يا بطل!",
+            "مذهل! أنت نجم!",
+            "تبارك الله! إجابة ممتازة!",
+            "صحيح! أنت شاطر جداً!",
+        ];
+
+        const wrongVoicePhrases = [
+            "لا بأس! حاول مرة ثانية!",
+            "لا تقلق! أنت تتعلم!",
+            "قريب! المرة الجاية أحسن!",
+            "لا بأس يا بطل! التعلم يحتاج صبر!",
+            "خطأ بسيط! أنت شاطر!",
+            "حاول مرة ثانية! أنت قادر!",
+            "مش مشكلة! كل مرة أحسن!",
+            "لا تستسلم! أنت رائع!",
+        ];
+
+        // Speak Arabic text
+        function speakArabic(text) {
+            try {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'ar-SA';
+                utter.rate = 0.9;
+                utter.pitch = 1.1;
+                utter.volume = 1;
+                // Try to find an Arabic voice
+                const voices = window.speechSynthesis.getVoices();
+                const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+                if (arabicVoice) utter.voice = arabicVoice;
+                window.speechSynthesis.speak(utter);
+            } catch(e) {}
+        }
+
+        // Pre-load voices (some browsers need this)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+
         let currentWords = [];
         let currentIndex = 0;
         let score = 0;
@@ -845,6 +894,8 @@
             setTimeout(() => document.getElementById('emojiDisplay').style.animation = 'popIn 0.5s ease', 10);
 
             document.getElementById('wordDisplay').innerHTML = `<span class="al-highlight">الـ</span>${w.word.substring(2)}`;
+            // Read the word aloud so kids hear the pronunciation
+            setTimeout(() => speakArabic(w.word), 400);
             document.getElementById('questionNum').textContent = `${toArabicNum(currentIndex + 1)} / ${toArabicNum(currentWords.length)}`;
             document.getElementById('scoreDisplay').textContent = toArabicNum(score);
             document.getElementById('progressFill').style.width = ((currentIndex + 1) / currentWords.length * 100) + '%';
@@ -893,6 +944,9 @@
                 feedback.innerHTML = `${msg}${streakMsg}<div class="explanation">${w.explain}</div>`;
                 feedback.className = 'feedback correct-msg';
                 playSound('correct');
+                // Speak Arabic encouragement
+                const voiceMsg = correctVoicePhrases[Math.floor(Math.random() * correctVoicePhrases.length)];
+                setTimeout(() => speakArabic(voiceMsg), 300);
             } else {
                 streak = 0;
                 wrongTotal++;
@@ -906,6 +960,9 @@
                 feedback.innerHTML = `${msg}<div class="explanation">الإجابة الصحيحة: ${correctType} - ${w.explain}</div>`;
                 feedback.className = 'feedback wrong-msg';
                 playSound('wrong');
+                // Speak Arabic motivation
+                const voiceMsg = wrongVoicePhrases[Math.floor(Math.random() * wrongVoicePhrases.length)];
+                setTimeout(() => speakArabic(voiceMsg), 300);
             }
 
             document.getElementById('scoreDisplay').textContent = toArabicNum(score);
@@ -949,6 +1006,17 @@
             document.getElementById('resultEmoji').textContent = emoji;
             document.getElementById('resultMsg').textContent = msg;
             document.getElementById('resultStars').textContent = stars;
+
+            // Speak final result
+            if (pct === 100) {
+                setTimeout(() => speakArabic("مبروك! نتيجة مثالية! أنت بطل حقيقي!"), 500);
+            } else if (pct >= 80) {
+                setTimeout(() => speakArabic("أحسنت! نتيجة رائعة جداً! استمر يا بطل!"), 500);
+            } else if (pct >= 60) {
+                setTimeout(() => speakArabic("جيد جداً! واصل التعلم وستصبح أفضل!"), 500);
+            } else {
+                setTimeout(() => speakArabic("لا تقلق! التعلم يحتاج ممارسة! حاول مرة أخرى!"), 500);
+            }
 
             // Best streak
             const bsd = document.getElementById('bestStreakDisplay');
